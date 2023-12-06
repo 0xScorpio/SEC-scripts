@@ -102,7 +102,7 @@ if ($accountType -eq "user") {
 
     foreach ($compAccount in $compList) {
         ## Check if the Computer Account is currently locked/disabled
-        $Computer = Get-ADComputer -Identity $compAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogon, LastLogonDate, PasswordLastSet, Description, DistinguishedName    
+        $Computer = Get-ADComputer -Identity $compAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogon, LastLogonDate, Description, DistinguishedName    
 
         ## Check if the Computer Account EXISTS
         if ($Computer -eq $null) {
@@ -131,15 +131,7 @@ if ($accountType -eq "user") {
             continue
         }   
 
-        ## If the Computer Account isn't disabled, check for the last time the computer was logged on to.
-        ## If the PasswordLastSet doesn't exist, inform and continue with rest of script.
-        if ($lastPasswordResetC -eq $null) {
-            Write-Host ""
-            Write-Host "Unable to retrieve the last password reset information for '$compAccount'."
-            Write-Host "OU: $($Computer.DistinguishedName)"
-            Write-Host ""
-            continue
-        }
+        ## Print relevant information
         Write-Host ""
         Write-Host "Last logon date for '$compAccount': $lastlog"
         Write-Host "OU: $($Computer.DistinguishedName)" 
