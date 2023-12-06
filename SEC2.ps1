@@ -38,9 +38,10 @@ if ($accountType -eq "user") {
         }   
 
         ## Catch current description as a variable (Override checking)
+        $currentDate = Get-Date
         $lastlogU = [datetime]::FromFileTime($user.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
         $existingDescription = $user.Description
-        $sec2Tag = "[SEC2] - Disabled due to inactivity | Edited: $lastlogU"
+        $sec2Tag = "[SEC2] - Disabled due to inactivity | LastLogon: $lastlogU | Edited: $currentDate"
         $newDescription = "$sec2Tag | $existingDescription"     
 
         ## Check if the user account is DISABLED
@@ -99,9 +100,6 @@ if ($accountType -eq "user") {
     $compAccounts = Read-Host "Enter the computer account(s) for review (separated by spaces)"
     $compList = $compAccounts -split ' '    
 
-    ## Tagging account with [SEC2]
-    $sec2TagC = "[SEC2] - Disabled due to inactivity | Edited: $(Get-Date)"    
-
     foreach ($compAccount in $compList) {
         ## Check if the Computer Account is currently locked/disabled
         $Computer = Get-ADComputer -Identity $compAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogon, LastLogonDate, PasswordLastSet, Description, DistinguishedName    
@@ -115,8 +113,9 @@ if ($accountType -eq "user") {
         }   
 
         ## Catch current description as a variable (Override checking)
+        $currentDateC = Get-Date
         $lastlog = [datetime]::FromFileTime($Computer.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
-        $sec2Tag = "[SEC2] Disabled | Edited: $lastlog"
+        $sec2Tag = "[SEC2] Disabled due to inactivity | LastLogon: $lastlog | Edited: $currentDateC"
         $existingDescriptionC = $Computer.Description
         $newDescriptionC = "$sec2Tag | $existingDescriptionC"     
 
