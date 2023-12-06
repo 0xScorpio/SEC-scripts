@@ -41,7 +41,7 @@ if ($accountType -eq "user") {
         $currentDate = Get-Date
         $lastlogU = [datetime]::FromFileTime($user.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
         $existingDescription = $user.Description
-        $sec2Tag = "[SEC2] - Disabled (inactivity/decommission), LastLogon: $lastlogU, Edited: $currentDate"
+        $sec2Tag = "[SEC2] - Disabled (inactivity/decommission), LastLogon: $lastlogU, LastPasswordSet: $($user.PasswordLastSet), Edited: $currentDate"
         $newDescription = "$sec2Tag | $existingDescription"     
 
         ## Check if the user account is DISABLED
