@@ -1,4 +1,4 @@
-﻿Write-Host ""
+Write-Host ""
 Write-Host @"
    _____  
   / ____| 
@@ -28,11 +28,24 @@ foreach ($keyword in $keywords) {
 $filterExpression = $filterConditions -join " -or "
 
 # Search for objects based on the keywords in the description
-$objects = Get-ADObject -Filter $filterExpression -Properties SamAccountName, Description
+$objects = Get-ADObject -Filter $filterExpression -Properties SamAccountName, Description, DistinguishedName
 
-# Display the results
+# Output the results to console and export to CSV file
+$result = @()
 foreach ($object in $objects) {
     Write-Host "SAM Account Name: $($object.SamAccountName)"
     Write-Host "Description: $($object.Description)"
+    Write-Host "DistinguishedName: $($object.DistinguishedName)"
     Write-Host "--------------"
+
+    # Add data to $result array for CSV export
+    $result += [PSCustomObject]@{
+        SamAccountName = $object.SamAccountName
+        Description = $object.Description
+        DistinguishedName = $object.DistinguishedName
+    }
 }
+
+# Export the data to a CSV file
+$result | Export-Csv -Path "SecurityCodeScan.csv" -NoTypeInformation
+Write-Host "Data exported to 'SecurityCodeScan.csv' file."
