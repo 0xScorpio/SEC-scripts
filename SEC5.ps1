@@ -18,7 +18,7 @@ _____________________________________________________
 "@ -ForegroundColor Cyan
 
 ########################################################################
-$sec5tag = "[SEC5] JIT Access"
+$sec5tag = "[SEC5] JIT Access (comment/info attribute for logs/details)"
 
 # Prompt user for the service account
 $serviceAccount = Read-Host "Enter the service account name"
