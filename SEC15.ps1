@@ -31,7 +31,7 @@ switch ($objectType)
             $userInformation = Get-ADUser -Identity $user -Properties Name, SamAccountName, UserPrincipalName, `
             Enabled, Description, Comment, Info, Company, Department, Title, Manager, employeeID, employeeType, `
             extensionAttribute1, extensionAttribute3, extensionAttribute4, DistinguishedName, lastLogon, `
-            PasswordLastSet
+            PasswordLastSet, PasswordNeverExpires
 
             # Format last logon date properly
             $lastlogU = [datetime]::FromFileTime($userInformation.lastLogon).ToString('dd/MM/yyyy [HH:mm]')
@@ -57,6 +57,7 @@ switch ($objectType)
             Write-Host "extensionAttribute4: $($userInformation.extensionAttribute4)"
             Write-Host "Last Logon: $lastLogU"
             Write-Host "Password Last Set: $($userInformation.PasswordLastSet)"
+            Write-Host "Password-Never-Expires: $($userInformation.PasswordNeverExpires)"
             Write-Host "OU Path: $($userInformation.DistinguishedName)"
             Write-Host ""
             Write-Host "______________________________________________"
@@ -96,6 +97,11 @@ switch ($objectType)
                                 $newCompany = Read-Host "Enter new company"
                                 Set-ADUser -Identity $user -Replace @{company=$newCompany}
                                 Write-Host "Successfully changed the attribute for 'company'!" -ForegroundColor Green
+                            }
+                            "neverexpire" {
+                                $newpne = Read-Host "Password-Never-Expires edit ($)(True/False)"
+                                Set-ADUser -Identity $user -PasswordNeverExpires $newpne
+                                Write-Host "Successfully changed the attribute for 'PasswordNeverExpires!'" -ForegroundColor Green
                             }
                             "department" {
                                 $newDepartment = Read-Host "Enter new department"
