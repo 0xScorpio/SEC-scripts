@@ -16,3 +16,4 @@
 | `SEC12` | Reads RDP logon sessions that occurred recently on a server |
 | `SEC13` | Checks service account credentials, ensuring bad login thresholds (1) and account lockout checking |
 | `SEC14` | Checks enabled computers without LAPS and inactivity (60 days). Run script in phases (description, pings, disables) |
+| `SEC15` | Pulls user/computer information and prompts for edits |
