@@ -72,7 +72,7 @@ switch ($objectType)
                     `n If there are multiple attributes to be changed, enter them all, separated by spaces.
                     `n (All other attributes can only be changed manually!)
                     `n INPUT OPTIONS:
-                    `n comment/info/company/department/title/employeeid/employeetype/ext1/ext3/ext4/description"
+                    `n comment/info/company/department/title/employeeid/employeetype/ext1/ext3/ext4/description/neverexpire"
 
                     $editAttributes = $editChoices.ToLower() -split " "
 
