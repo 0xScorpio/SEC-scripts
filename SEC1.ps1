@@ -5,7 +5,7 @@ Write-Host @"
    _____  
   / ____| 
  | (___  
-  \___ \ ecurity Script [2]
+  \___ \ ecurity Script [1]
   ____) |
  |_____/ 
 
