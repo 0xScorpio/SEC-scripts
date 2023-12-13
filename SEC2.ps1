@@ -1,4 +1,4 @@
-﻿Write-Host ""
+Write-Host ""
 Write-Host @"
    _____  
   / ____| 
@@ -27,7 +27,7 @@ if ($accountType -eq "user") {
         
     foreach ($userAccount in $userList) {
         ## Check if the user account is currently locked/disabled
-        $user = Get-ADUser -Identity $userAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogonDate, PasswordLastSet, Description, DistinguishedName    
+        $user = Get-ADUser -Identity $userAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogonDate, PasswordLastSet, Description, DistinguishedName, Comment    
 
         ## Check if the user account EXISTS
         if ($user -eq $null) {
@@ -42,6 +42,8 @@ if ($accountType -eq "user") {
         $lastlogU = [datetime]::FromFileTime($user.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
         $existingDescription = $user.Description
         $sec2Tag = "[SEC2] - Disabled (inactivity/decommission) $currentDate, LastLogon: $lastlogU, LastPasswordSet: $($user.PasswordLastSet)"
+        $currentComment = $user.Comment
+        $newComment = "$sec2Tag | $currentComment"
         $newDescription = "$sec2Tag | $existingDescription"     
 
         ## Check if the user account is DISABLED
@@ -84,8 +86,9 @@ if ($accountType -eq "user") {
         if ($confirmation -eq 'yes') {
             ## Disable account 
             Disable-ADAccount -Identity $userAccount
-            ## Update description to SEC2
-            Set-ADUser -Identity $userAccount -Description $newDescription
+            ## Update description & comment attributes to SEC2
+            Set-ADUser -Identity $userAccount -Replace @{Comment=$newComment}
+            Set-ADUser -Identity $userAccount -Description $newDescription 
             Write-Host ""
             Write-Host "User account '$userAccount' has been disabled."
             Write-Host ""
@@ -117,6 +120,8 @@ if ($accountType -eq "user") {
         $lastlog = [datetime]::FromFileTime($Computer.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
         $sec2Tag = "[SEC2] Disabled (inactivity/decommission) $currentDateC, LastLogon: $lastlog"
         $existingDescriptionC = $Computer.Description
+        $currentCommentC = $Computer.Comment
+        $newCommentC = "$sec2Tag | $currentCommentC"
         $newDescriptionC = "$sec2Tag | $existingDescriptionC"     
 
         ## Check if the Computer Account is DISABLED
@@ -143,7 +148,8 @@ if ($accountType -eq "user") {
         if ($confirmation -eq 'yes') {
             ## Disable account 
             Disable-ADAccount -Identity $compAccount
-            ## Update description to SEC2
+            ## Update description & comment attributes to SEC2
+            Set-ADComputer -Identity $compAccount -Replace @{Comment=$newCommentC}
             Set-ADComputer -Identity $compAccount -Description $newDescriptionC
             Write-Host ""
             Write-Host "Computer Account '$compAccount' has been disabled."
