@@ -21,7 +21,7 @@ $userList = $userAccounts -split ' '
 
 foreach ($userAccount in $userList) {
     ## Check if the user account is currently locked/disabled
-    $user = Get-ADUser -Identity $userAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogonDate, PasswordLastSet, Description, DistinguishedName
+    $user = Get-ADUser -Identity $userAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogonDate, PasswordLastSet, Description, DistinguishedName, Comment
 
     if ($user -eq $null) {
         Write-Host "User account '$userAccount' not found."
@@ -54,9 +54,13 @@ foreach ($userAccount in $userList) {
     if ($confirmation -eq 'yes') {
         ## Disable account and update description to SEC4
         $currentDesc = $($user.Description)
+        $currentComment = $($user.Comment)
         $sec4Tag = "[SEC4] CREDENTIAL LEAK! Password reset required. Edited: $(Get-Date)"
         $newDesc = "$sec4Tag | $currentDesc"
+        $newComment = "$sec4Tag | $currentComment"
+
         Disable-ADAccount -Identity $userAccount
+        Set-ADUser -Identity $userAccount -Replace @{Comment=$newComment}
         Set-ADUser -Identity $userAccount -Description $newDesc
         Write-Host "User account '$userAccount' has been disabled."
     } else {
