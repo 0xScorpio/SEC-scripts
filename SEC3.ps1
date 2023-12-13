@@ -1,4 +1,4 @@
-﻿Write-Host ""
+Write-Host ""
 Write-Host @"
    _____  
   / ____| 
@@ -80,20 +80,20 @@ function MoveUserToDisabledOU {
     param(
         [string]$userName
     )
-    $user = Get-ADUser -Identity $userName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
+    $user = Get-ADUser -Identity $userName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
     $disabledOU = "DISABLED-OU-FOR-USERS" ##### EDIT ####
 
     # Display user information
     Write-Host "User Information:"
-    $user | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
-    $currentDescriptionuser = $user.Description
-    $newDescriptionuser = "$sec3Tag | $currentDescriptionuser"
+    $user | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
+    $currentCommentuser = $user.Comment
+    $newCommentuser = "$sec3Tag | $currentCommentuser"
 
     # Prompt user to confirm
     $confirmation = Read-Host "Do you want to move user '$userName' to the disabled objects OU? (yes/no)"
     if ($confirmation -eq "yes") {
         # Move user to disabled objects OU
-        Set-ADUser -Identity $user.SamAccountName -Description $newDescriptionuser
+        Set-ADUser -Identity $user.SamAccountName -Replace @{Comment=$newCommentuser}
         Move-ADObject -Identity $user.DistinguishedName -TargetPath $disabledOU
         Write-Host "User '$userName' has been moved to the disabled objects OU."
 
@@ -111,20 +111,20 @@ function MoveComputerToDisabledOU {
     param(
         [string]$computerName
     )
-    $computer = Get-ADComputer -Identity $computerName -Properties SamAccountName, DistinguishedName, LastLogonDate, Description, Enabled
+    $computer = Get-ADComputer -Identity $computerName -Properties SamAccountName, DistinguishedName, LastLogonDate, Description, Enabled, Comment
     $disabledOU = "DISABLED-OU-FOR-COMPUTERS" #### EDIT ####
 
     # Display computer information
     Write-Host "Computer Information:"
-    $computer | Select-Object SamAccountName, DistinguishedName, Description, Enabled, LastLogonDate
-    $currentDescriptioncomp = $computer.Description
-    $newDescriptioncomp = "$sec3Tag | $currentDescriptioncomp"
+    $computer | Select-Object SamAccountName, DistinguishedName, Description, Enabled, LastLogonDate, Comment
+    $currentCommentcomp = $computer.Comment
+    $newCommentcomp = "$sec3Tag | $currentCommentcomp"
 
     # Prompt user to confirm
     $confirmation = Read-Host "Do you want to move computer '$computerName' to the disabled computers OU? (yes/no)"
     if ($confirmation -eq "yes") {
         # Move computer to disabled computers OU
-        Set-ADComputer -Identity $computer.SamAccountName -Description $newDescriptioncomp
+        Set-ADComputer -Identity $computer.SamAccountName -Replace @{Comment=$newCommentcomp}
         Move-ADObject -Identity $computer.DistinguishedName -TargetPath $disabledOU
         Write-Host "Computer '$computerName' has been moved to the disabled computers OU."
 
@@ -142,20 +142,20 @@ function MoveSvcToDisabledOU {
     param(
         [string]$svcName
     )
-    $serviceaccount = Get-ADUser -Identity $svcName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
+    $serviceaccount = Get-ADUser -Identity $svcName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
     $disabledOUsvc = "DISABLED-OU-FOR-SERVICEACCOUNTS" #### EDIT ####
 
     # Display service account information
     Write-Host "Service Account Information:"
-    $serviceaccount | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
-    $currentDescriptionsvc = $serviceaccount.Description
-    $newDescriptionsvc = "$sec3Tag | $currentDescriptionsvc"
+    $serviceaccount | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
+    $currentCommentsvc = $serviceaccount.Comment
+    $newCommentsvc = "$sec3Tag | $currentCommentsvc"
 
     # Prompt user to confirm
     $confirmation = Read-Host "Do you want to move service account '$svcName' to the disabled objects OU? (yes/no)"
     if ($confirmation -eq "yes") {
         # Move service account(s) to disabled objects OU
-        Set-ADUser -Identity $serviceaccount.SamAccountName -Description $newDescriptionsvc
+        Set-ADUser -Identity $serviceaccount.SamAccountName -Replace @{Comment=$newCommentsvc}
         Move-ADObject -Identity $serviceaccount.DistinguishedName -TargetPath $disabledOUsvc
         Write-Host "Service account '$svcName' has been moved to the disabled objects OU."
 
@@ -173,20 +173,20 @@ function MoveExtToDisabledOU {
     param(
         [string]$extName
     )
-    $externalcontractor = Get-ADUser -Identity $extName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
+    $externalcontractor = Get-ADUser -Identity $extName -Properties SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
     $disabledOUext = "DISABLED-OU-FOR-EXTERNALCONTRACTORS" #### EDIT ####
-    $currentDescriptionexternal = $externalcontractor.Description
-    $newDescriptionexternal = "$sec3Tag | $currentDescriptionexternal"
+    $currentCommentexternal = $externalcontractor.Comment
+    $newCommentexternal = "$sec3Tag | $currentCommentexternal"
 
     # Display user information
     Write-Host "User Information:"
-    $externalcontractor | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled
+    $externalcontractor | Select-Object SamAccountName, DistinguishedName, PasswordLastSet, LastLogonDate, Description, Enabled, Comment
 
     # Prompt user to confirm
     $confirmation = Read-Host "Do you want to move external contractor '$extName' to the disabled objects OU? (yes/no)"
     if ($confirmation -eq "yes") {
         # Move user to disabled objects OU
-        Set-ADUser -Identity $externalcontractor.SamAccountName -Description $newDescriptionexternal
+        Set-ADUser -Identity $externalcontractor.SamAccountName -Replace @{Comment=newCommentexternal}
         Move-ADObject -Identity $externalcontractor.DistinguishedName -TargetPath $disabledOUext
         Write-Host "External contractor '$extName' has been moved to the disabled objects OU."
 
