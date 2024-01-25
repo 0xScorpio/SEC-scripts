@@ -64,7 +64,7 @@ if ($userChoice -eq "computer") {
 
         $existingDescriptionU = $user.Description
 
-        if ($inactivedays -ge $dayThreshold) {
+        if ($inactivedaysU -ge $dayThreshold) {
             $newDescriptionU = "[SEC1] Inactive: $inactivedaysU days. LastLogon: $lastlogU Edited: $currentDate"
 
             # If an existing description exists, either print or append the new information
