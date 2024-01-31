@@ -18,3 +18,4 @@
 | `SEC14` | Checks enabled computers without LAPS and inactivity (60 days). Run script in phases (description, pings, disables) |
 | `SEC15` | Pulls user/computer information and prompts for edits |
 | `SEC16` | Checks for locked out user events on the domain controller |
+| `SEC17` | Checks for logs on enabled/disabled objects and their timestamps within AD |
