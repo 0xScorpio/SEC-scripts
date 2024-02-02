@@ -95,11 +95,53 @@ function Get-Hashes {
     }
 }
 
-# Check SMB versions
+function Get-Ciphers {
+    $ciphersPath = "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers"
+
+    try {
+        $des5656Check = (Get-ItemProperty -Path "$ciphersPath\DES 56/56" -ErrorAction Stop).Enabled
+        $rc240128Check = (Get-ItemProperty -Path "$ciphersPath\RC2 40/128" -ErrorAction Stop).Enabled
+        $rc256128Check = (Get-ItemProperty -Path "$ciphersPath\RC2 56/128" -ErrorAction Stop).Enabled
+        $rc2128128Check = (Get-ItemProperty -Path "$ciphersPath\RC2 128/128" -ErrorAction Stop).Enabled
+        $rc440128Check = (Get-ItemProperty -Path "$ciphersPath\RC4 40/128" -ErrorAction Stop).Enabled
+        $rc456128Check = (Get-ItemProperty -Path "$ciphersPath\RC4 56/128" -ErrorAction Stop).Enabled
+        $rc464128Check = (Get-ItemProperty -Path "$ciphersPath\RC4 64/128" -ErrorAction Stop).Enabled
+        $rc4128128Check = (Get-ItemProperty -Path "$ciphersPath\RC4 128/128" -ErrorAction Stop).Enabled
+        $3des168Check = (Get-ItemProperty -Path "$ciphersPath\Triple DES 168" -ErrorAction Stop).Enabled
+        $aes128Check = (Get-ItemProperty -Path "$ciphersPath\AES 128/128" -ErrorAction Stop).Enabled
+        $aes256Check = (Get-ItemProperty -Path "$ciphersPath\AES 256/256" -ErrorAction Stop).Enabled
+
+        Write-Host "================================"
+        Write-Host "             Ciphers             "
+        Write-Host "================================"
+        Write-Host "   DES 56/56: $(If ($des5656Check -eq 4294967295 -or $des5656Check -eq 1) {'Enabled'})"
+        Write-Host "   RC2 40/128: $(If ($rc240128Check -eq 4294967295 -or $rc240128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC2 56/128: $(If ($rc256128Check -eq 4294967295 -or $rc256128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC2 128/128: $(If ($rc2128128Check -eq 4294967295 -or $rc2128128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC4 40/128: $(If ($rc440128Check -eq 4294967295 -or $rc440128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC4 56/128: $(If ($rc456128Check -eq 4294967295 -or $rc456128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC4 64/128: $(If ($rc464128Check -eq 4294967295 -or $rc464128Check -eq 1) {'Enabled'})"
+        Write-Host "   RC4 128/128: $(If ($rc4128128Check -eq 4294967295 -or $rc4128128Check -eq 1) {'Enabled'})"
+        Write-Host "   3DES 168: $(If ($3des168Check -eq 4294967295 -or $3des168Check -eq 1) {'Enabled'})"
+        Write-Host "   AES 128/128: $(If ($aes128Check -eq 4294967295 -or $aes128Check -eq 1) {'Enabled'})"
+        Write-Host "   AES 256/256: $(If ($aes256Check -eq 4294967295 -or $aes256Check -eq 1) {'Enabled'})"
+        Write-Host "________________________________"
+    } catch {
+        Write-Host "Error accessing registry path: $ciphersPath"
+    }
+}
+
+
+################## MAIN ####################
+
+# Check SMB versions (SMB2 by default - if SMB1, check for legacy reasons)
 Get-SMBVersions
 
-# Check TLS values
+# Check TLS values (Hardened: TLS1.2 client/server ---- BestPractice: >= TLS1.0 client/server)
 Get-TLSValues
 
-# Check hashes
+# Check hashes (Hardened: SHA 256/384/512 ---- BestPractice: All)
 Get-Hashes 
+
+# Check Ciphers (Hardened: AES only ---- BestPractice: AES,3DES)
+Get-Ciphers
