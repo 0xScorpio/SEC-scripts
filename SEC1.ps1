@@ -45,21 +45,22 @@ if ($userChoice -eq "computer") {
         $pne = $comp.PasswordNeverExpires
 
         if ($inactivedays -ge $dayThreshold) {
-            $newDescription = "[SEC1] Edited: $currentDate INACTIVE: $inactivedays days. LastLogon: $lastlog PwdLastSet: $pls PwdNeverExpires: $pne"
-
-            # Check if [SEC1] already exists in the description and override it
-            if ($existingDescription -like "*[SEC1]*") {
-                $existingDescription = $existingDescription -replace "\[SEC1\].*", $newDescription
-            }
-
-            # Update the Description attribute
-            Set-ADComputer -Identity $comp.SamAccountName -Description $newDescription
+            $newDescription = "[SEC1] Edited: $currentDate INACTIVE: $inactivedays days. LastLogon: $lastlog PwdLastSet: $pls PwdNeverExpires: $pne ----"
+            $latestSEC1 = $existingDescription -replace ".*----", $newDescription
 
             # Append the new description to the Comment attribute
             $newComment = "$newDescription | $existingComment"
             Set-ADComputer -Identity $comp.SamAccountName -Replace @{Comment=$newComment}
+            Write-Host "Updated and appended security comment log for $($comp.SamAccountName)"
 
-            Write-Host "Updated description and appended comment for $($comp.SamAccountName)"
+            # Check if [SEC1] already exists in the description and override it
+            if ($existingDescription -like "*[SEC1]*") {
+                $latestSEC1
+                Write-Host "UPDATED current [SEC1] description to latest changes."
+            } else {
+                Set-ADComputer -Identity $comp -Description $newDescription
+                Write-Host "[SEC1] description does NOT exist! Adding new [SEC1] description!"
+            }
         }
     }
 } elseif ($userChoice -eq "user") {
@@ -78,21 +79,22 @@ if ($userChoice -eq "computer") {
         $pneu = $user.PasswordNeverExpires
 
         if ($inactivedaysU -ge $dayThreshold) {
-            $newDescriptionU = "[SEC1] Edited: $currentDate INACTIVE: $inactivedaysU days. LastLogon: $lastlogU PwdLastSet: $plsu PwdNeverExpires: $pneu"
-
-            # Check if [SEC1] already exists in the description and override it
-            if ($existingDescriptionU -like "*[SEC1]*") {
-                $existingDescriptionU = $existingDescriptionU -replace "\[SEC1\].*", $newDescriptionU
-            }
-
-            # Update the Description attribute
-            Set-ADUser -Identity $user.SamAccountName -Description $newDescriptionU
+            $newDescriptionU = "[SEC1] Edited: $currentDate INACTIVE: $inactivedaysU days. LastLogon: $lastlogU PwdLastSet: $plsu PwdNeverExpires: $pneu ----"
+            $latestSEC1U = $existingDescriptionU -replace ".*----", $newDescriptionU
 
             # Append the new description to the Comment attribute
             $newCommentU = "$newDescriptionU | $existingCommentU"
             Set-ADUser -Identity $user.SamAccountName -Replace @{Comment=$newCommentU}
+            Write-Host "Updated and appended security comment log for $($user.SamAccountName)"
 
-            Write-Host "Updated description and appended comment for $($user.SamAccountName)"
+            # Check if [SEC1] already exists in the description and override it
+            if ($existingDescriptionU -like "*[SEC1]*") {
+                $latestSEC1U
+                Write-Host "UPDATED current [SEC1] description to latest changes."
+            } else {
+                Set-ADUser -Identity $user -Description $newDescriptionU
+                Write-Host "[SEC1] description does NOT exist! Adding new [SEC1] description!"
+            }
         }
     }
 }
