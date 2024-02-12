@@ -15,7 +15,7 @@ __________________________________________________________________________
 "@ -ForegroundColor Cyan
 
 ############## VARIABLES TO CHANGE ################
-$OUPath = "OU=External_Contractors,OU=Disabled,DC=kotsovolos,DC=gr"
+$OUPath = "OU-PATH"
 $dayThreshold = 70
 # This is for converting Greek time signatures to AM or PM
 [System.Threading.Thread]::CurrentThread.CurrentCulture = 'en-US'
