@@ -15,7 +15,7 @@ __________________________________________________________________________
 "@ -ForegroundColor Cyan
 
 ############## VARIABLES TO CHANGE ################
-$OUPath = "OU-PATH"
+$OUPath = "OU=External_Contractors,OU=Disabled,DC=kotsovolos,DC=gr"
 $dayThreshold = 70
 # This is for converting Greek time signatures to AM or PM
 [System.Threading.Thread]::CurrentThread.CurrentCulture = 'en-US'
@@ -37,7 +37,7 @@ if ($userChoice -eq "computer") {
 
     foreach ($comp in $comps) {
         $inactivedays = ($currentDate - $comp.LastLogonDate).Days
-        $lastlog = $comp.LastLogonDate.ToString('dd/MM/yyyy [HH:mm tt]')
+        $lastlog = $comp.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
 
         $existingDescription = $comp.Description
         $existingComment = $comp.Comment
@@ -53,14 +53,9 @@ if ($userChoice -eq "computer") {
             Set-ADComputer -Identity $comp.SamAccountName -Replace @{Comment=$newComment}
             Write-Host "Updated and appended security comment log for $($comp.SamAccountName)"
 
-            # Check if [SEC1] already exists in the description and override it
-            if ($existingDescription -like "*[SEC1]*") {
-                $latestSEC1
-                Write-Host "UPDATED current [SEC1] description to latest changes."
-            } else {
-                Set-ADComputer -Identity $comp -Description $newDescription
-                Write-Host "[SEC1] description does NOT exist! Adding new [SEC1] description!"
-            }
+            # Create new description
+            Set-ADComputer -Identity $comp -Description $newDescription
+            Write-Host "UPDATED current [SEC1] description to latest changes."
         }
     }
 } elseif ($userChoice -eq "user") {
@@ -71,7 +66,7 @@ if ($userChoice -eq "computer") {
 
     foreach ($user in $users) {
         $inactivedaysU = ($currentDate - $user.LastLogonDate).Days
-        $lastlogU = $user.LastLogonDate.ToString('dd/MM/yyyy [HH:mm tt]')
+        $lastlogU = $user.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
 
         $existingDescriptionU = $user.Description
         $existingCommentU = $user.Comment
@@ -87,14 +82,9 @@ if ($userChoice -eq "computer") {
             Set-ADUser -Identity $user.SamAccountName -Replace @{Comment=$newCommentU}
             Write-Host "Updated and appended security comment log for $($user.SamAccountName)"
 
-            # Check if [SEC1] already exists in the description and override it
-            if ($existingDescriptionU -like "*[SEC1]*") {
-                $latestSEC1U
-                Write-Host "UPDATED current [SEC1] description to latest changes."
-            } else {
-                Set-ADUser -Identity $user -Description $newDescriptionU
-                Write-Host "[SEC1] description does NOT exist! Adding new [SEC1] description!"
-            }
+            # Create new description
+            Set-ADUser -Identity $user -Description $newDescriptionU
+            Write-Host "UPDATED current [SEC1] description to latest changes."
         }
     }
 }
