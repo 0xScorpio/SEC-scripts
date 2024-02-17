@@ -23,68 +23,73 @@ $dayThreshold = 70
 
 $currentDate = Get-Date
 
+function TagObjects {
+    param (
+        [string]$ObjectType,
+        [string]$OUPath,
+        [int]$DayThreshold,
+        [datetime]$CurrentDate
+    )
+
+    try {
+        if ($ObjectType -eq "computer") {
+            $objects = Get-ADComputer -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
+        } elseif ($ObjectType -eq "user") {
+            $objects = Get-ADUser -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
+        } else {
+            throw "Invalid object type specified."
+        }
+
+        foreach ($object in $objects) {
+            $inactivedays = ($CurrentDate - $object.LastLogonDate).Days
+            $lastlog = $object.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
+
+            $existingDescription = $object.Description
+            $existingComment = $object.Comment
+            $pls = $object.PasswordLastSet
+            $pne = $object.PasswordNeverExpires
+
+            if ($inactivedays -ge $DayThreshold) {
+                $newDescription = "[SEC1] Edited: $CurrentDate INACTIVE:$inactivedays LastLog: $lastlog PwdSet: $pls PwdNExp: $pne || "
+                $latestSEC1 = $existingDescription -replace ".*||", $newDescription
+
+                # Append the new description to the Comment attribute
+                $newComment = "$newDescription | $existingComment"
+                Set-ADObject -Identity $object.SamAccountName -Replace @{Comment=$newComment}
+                # Update the Description attribute
+                Set-ADObject -Identity $object -Description $newDescription
+
+                Write-Host "Updated/appended 'Comment' attribute for $($object.SamAccountName)"
+            }
+        }
+    } catch {
+        Write-Host "Error: $_"
+    }
+}
+
+# Validate and sanitize input parameters
+if (-not ($OUPath -match '^OU=.*') -or -not (Test-Path -Path $OUPath -PathType Container)) {
+    Write-Host "Invalid OU path specified."
+    return
+}
+
+if ($dayThreshold_SEC1 -le 0) {
+    Write-Host "Invalid day threshold specified."
+    return
+}
+
 Write-Host "[SEC1] is about to apply tags unto the following OU path with the current threshold:"
 Write-Host ""
 Write-Host "$OUPath" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Threshold: $dayThreshold days" -ForegroundColor Red
+Write-Host "Threshold: $dayThreshold_SEC1 days" -ForegroundColor Yellow
 Write-Host ""
 $userChoice = Read-Host "Tagging means updating the description attribute. What object type are we tagging? (user/computer)"
 
-if ($userChoice -eq "computer") {
-    # Tag Computer objects with [SEC1] depending on dayThreshold variable
-    $comps = Get-ADComputer -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
+$currentDate = Get-Date
 
-    foreach ($comp in $comps) {
-        $inactivedays = ($currentDate - $comp.LastLogonDate).Days
-        $lastlog = $comp.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
-
-        $existingDescription = $comp.Description
-        $existingComment = $comp.Comment
-        $pls = $comp.PasswordLastSet
-        $pne = $comp.PasswordNeverExpires
-
-        if ($inactivedays -ge $dayThreshold) {
-            $newDescription = "[SEC1] Edited: $currentDate INACTIVE: $inactivedays days. LastLogon: $lastlog PwdLastSet: $pls PwdNeverExpires: $pne ----"
-            $latestSEC1 = $existingDescription -replace ".*----", $newDescription
-
-            # Append the new description to the Comment attribute
-            $newComment = "$newDescription | $existingComment"
-            Set-ADComputer -Identity $comp.SamAccountName -Replace @{Comment=$newComment}
-            Write-Host "Updated and appended security comment log for $($comp.SamAccountName)"
-
-            # Create new description
-            Set-ADComputer -Identity $comp -Description $newDescription
-            Write-Host "UPDATED current [SEC1] description to latest changes."
-        }
-    }
-} elseif ($userChoice -eq "user") {
-    # Tag User objects with [SEC1] depending on dayThreshold variable
-
-    # Pull all users within a search scope
-    $users = Get-ADUser -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
-
-    foreach ($user in $users) {
-        $inactivedaysU = ($currentDate - $user.LastLogonDate).Days
-        $lastlogU = $user.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
-
-        $existingDescriptionU = $user.Description
-        $existingCommentU = $user.Comment
-        $plsu = $user.PasswordLastSet
-        $pneu = $user.PasswordNeverExpires
-
-        if ($inactivedaysU -ge $dayThreshold) {
-            $newDescriptionU = "[SEC1] Edited: $currentDate INACTIVE: $inactivedaysU days. LastLogon: $lastlogU PwdLastSet: $plsu PwdNeverExpires: $pneu ----"
-            $latestSEC1U = $existingDescriptionU -replace ".*----", $newDescriptionU
-
-            # Append the new description to the Comment attribute
-            $newCommentU = "$newDescriptionU | $existingCommentU"
-            Set-ADUser -Identity $user.SamAccountName -Replace @{Comment=$newCommentU}
-            Write-Host "Updated and appended security comment log for $($user.SamAccountName)"
-
-            # Create new description
-            Set-ADUser -Identity $user -Description $newDescriptionU
-            Write-Host "UPDATED current [SEC1] description to latest changes."
-        }
-    }
+if ($userChoice -eq "computer" -or $userChoice -eq "user") {
+    TagObjects -ObjectType $userChoice -OUPath $OUPath_SEC1 -DayThreshold $dayThreshold_SEC1 -CurrentDate $currentDate
+} else {
+    Write-Host "Invalid object type specified."
 }
