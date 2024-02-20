@@ -15,8 +15,8 @@ __________________________________________________________________________
 "@ -ForegroundColor Cyan
 
 ############## VARIABLES TO CHANGE ################
-$OUPath = "OU-PATH"
-$dayThreshold = 70
+$OUPath_SEC1 = "OU-PATH"
+$dayThreshold_SEC1 = 70
 # This is for converting Greek time signatures to AM or PM
 [System.Threading.Thread]::CurrentThread.CurrentCulture = 'en-US'
 ###################################################
@@ -31,44 +31,46 @@ function TagObjects {
         [datetime]$CurrentDate
     )
 
-    try {
-        if ($ObjectType -eq "computer") {
-            $objects = Get-ADComputer -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
-        } elseif ($ObjectType -eq "user") {
-            $objects = Get-ADUser -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
-        } else {
-            throw "Invalid object type specified."
-        }
+    if ($ObjectType -eq "computer") {
+        $objects = Get-ADComputer -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
+    } elseif ($ObjectType -eq "user") {
+        $objects = Get-ADUser -Filter * -SearchBase $OUPath -SearchScope Subtree -Properties SamAccountName, LastLogonDate, Description, Comment, PasswordLastSet, PasswordNeverExpires
+    } else {
+        throw "Invalid object type specified."
+    }
 
-        foreach ($object in $objects) {
-            $inactivedays = ($CurrentDate - $object.LastLogonDate).Days
-            $lastlog = $object.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
+    foreach ($object in $objects) {
+        $inactivedays = ($CurrentDate - $object.LastLogonDate).Days
+        $lastlog = $object.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
+        $existingDescription = $object.Description
+        $existingComment = $object.Comment
+        $pls = $object.PasswordLastSet
+        $pne = $object.PasswordNeverExpires
 
-            $existingDescription = $object.Description
-            $existingComment = $object.Comment
-            $pls = $object.PasswordLastSet
-            $pne = $object.PasswordNeverExpires
-
+        try {
             if ($inactivedays -ge $DayThreshold) {
                 $newDescription = "[SEC1] Edited: $CurrentDate INACTIVE:$inactivedays LastLog: $lastlog PwdSet: $pls PwdNExp: $pne || "
                 $latestSEC1 = $existingDescription -replace ".*||", $newDescription
 
                 # Append the new description to the Comment attribute
                 $newComment = "$newDescription | $existingComment"
-                Set-ADObject -Identity $object.SamAccountName -Replace @{Comment=$newComment}
+                Set-ADObject -Identity $object -Replace @{Comment=$newComment}
                 # Update the Description attribute
                 Set-ADObject -Identity $object -Description $newDescription
 
                 Write-Host "Updated/appended 'Comment' attribute for $($object.SamAccountName)"
             }
-        }
-    } catch {
-        Write-Host "Error: $_"
+        } catch {
+            # Added the stack-trace for debugging because I couldn't find what failed just by PSItem
+            Write-Host "Error: [+] $_"
+            Write-Host $_.ScriptStackTrace
+            continue
+        } 
     }
 }
 
 # Validate and sanitize input parameters
-if (-not ($OUPath -match '^OU=.*') -or -not (Test-Path -Path $OUPath -PathType Container)) {
+if (-not ($OUPath -match '^OU=.*') -or -not ([adsi]::Exists("LDAP://OU=HO,OU=DSGI SEE,DC=kotsovolos,DC=gr"))) {
     Write-Host "Invalid OU path specified."
     return
 }
