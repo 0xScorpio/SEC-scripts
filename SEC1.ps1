@@ -70,7 +70,7 @@ function TagObjects {
 }
 
 # Validate and sanitize input parameters
-if (-not ($OUPath -match '^OU=.*') -or -not ([adsi]::Exists("LDAP://OU=HO,OU=DSGI SEE,DC=kotsovolos,DC=gr"))) {
+if (-not ($OUPath_SEC1 -match '^OU=.*') -or -not ([adsi]::Exists("LDAP://$OUPath_SEC1"))) {
     Write-Host "Invalid OU path specified."
     return
 }
@@ -82,7 +82,7 @@ if ($dayThreshold_SEC1 -le 0) {
 
 Write-Host "[SEC1] is about to apply tags unto the following OU path with the current threshold:"
 Write-Host ""
-Write-Host "$OUPath" -ForegroundColor Yellow
+Write-Host "OU-Path: $OUPath_SEC1" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Threshold: $dayThreshold_SEC1 days" -ForegroundColor Yellow
 Write-Host ""
