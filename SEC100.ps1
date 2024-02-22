@@ -450,9 +450,7 @@ Customize the Start Time variable accordingly. Default start time is 24 hours.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit:
-
-[1] `$startTime_SEC17
+Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
