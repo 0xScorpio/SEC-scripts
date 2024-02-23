@@ -525,7 +525,7 @@ function Show-Prerequisites([int] $requisite) {
             Write-Host ""
             Write-Host "The following variable values are being executed with the script:"
             Write-Host ""
-            Write-Host "`$keywords_SEC0: $keywords" -ForegroundColor Yellow
+            Write-Host "`$keywords_SEC0: $keywords_SEC0" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "If you need to change any variables, stop the script [Ctrl+C]"
             Write-Host "and change those stated variables within the VARIABLES section!"
