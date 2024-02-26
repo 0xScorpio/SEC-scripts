@@ -576,7 +576,7 @@ function Run-SecurityCode([int] $securityCode) {
 function Init-SEC0 {
 
     # Check if $keywords_SEC0 is a non-empty string ---> input validation
-    if (-not [string]::IsNullOrEmpty($keywords_SEC0) -and $keywords_SEC0 -is [string]) {
+    if (-not [string]::IsNullOrEmpty($keywords_SEC0) -and ($keywords_SEC0 -is [array] -or $keywords_SEC0 -is [string])) {
 
         # Create an array to store individual filter conditions
         $filterConditions = foreach ($keyword in $keywords_SEC0) {
@@ -711,7 +711,9 @@ function Init-SEC2 {
 
     if ($accountType -eq "user") {
         ######################## USER / SERVICE / EXT-CONTRACTOR ACCOUNTS #########################
+        Write-Host ""
         $userAccounts = Read-Host "Enter the user/service account(s) for review (separated by spaces)"
+        Write-Host ""
         $userList = $userAccounts -split ' '    
             
         foreach ($userAccount in $userList) {
@@ -728,9 +730,9 @@ function Init-SEC2 {
 
             ## Catch current description as a variable (Override checking)
             $currentDate = Get-Date
-            $lastlogU = [datetime]::FromFileTime($user.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
+            $lastlogU = $user.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
             $existingDescription = $user.Description
-            $sec2Tag = "[SEC2] - Disabled (inactivity/decommission) $currentDate, LastLogon: $lastlogU, LastPasswordSet: $($user.PasswordLastSet)"
+            $sec2Tag = "[SEC2] - Disabled (inactive/decom) $currentDate -- LastLogon: $lastlogU, PwdLastSet: $($user.PasswordLastSet)"
             $currentComment = $user.Comment
             $newComment = "$sec2Tag | $currentComment"
             $newDescription = "$sec2Tag | $existingDescription"     
@@ -789,12 +791,14 @@ function Init-SEC2 {
         }
     } elseif ($accountType -eq "computer") {
         ######################## COMPUTER ACCOUNTS #########################
+        Write-Host ""
         $compAccounts = Read-Host "Enter the computer account(s) for review (separated by spaces)"
+        Write-Host ""
         $compList = $compAccounts -split ' '    
 
         foreach ($compAccount in $compList) {
             ## Check if the Computer Account is currently locked/disabled
-            $Computer = Get-ADComputer -Identity $compAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogon, LastLogonDate, Description, DistinguishedName    
+            $Computer = Get-ADComputer -Identity $compAccount -Properties SamAccountName, UserPrincipalName, Enabled, LastLogon, LastLogonDate, Description, DistinguishedName, PasswordLastSet    
 
             ## Check if the Computer Account EXISTS
             if ($Computer -eq $null) {
@@ -806,8 +810,9 @@ function Init-SEC2 {
 
             ## Catch current description as a variable (Override checking)
             $currentDateC = Get-Date
-            $lastlog = [datetime]::FromFileTime($Computer.LastLogon).ToString('dd/MM/yyyy [HH:mm]')
-            $sec2Tag = "[SEC2] Disabled (inactivity/decommission) $currentDateC, LastLogon: $lastlog"
+            $pwdlastC = $Computer.PasswordLastSet
+            $lastlog = $Computer.LastLogonDate.ToString('MM/dd/yyyy [HH:mm tt]')
+            $sec2Tag = "[SEC2] Disabled (inactive/decom) $currentDateC -- LastLogon: $lastlog PwdLastSet: $pwdLastC"
             $existingDescriptionC = $Computer.Description
             $currentCommentC = $Computer.Comment
             $newCommentC = "$sec2Tag | $currentCommentC"
@@ -1304,6 +1309,96 @@ function Init-SEC11 {
         }
     }
 
+    # Function to check NTLM versions
+    function Get-NTLMVersion {
+        $ntlmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+
+        try {
+            $lmCompatibility = (Get-ItemProperty -Path $ntlmPath -ErrorAction Stop).LMCompatibility
+
+            switch ($lmCompatibility) {
+                0 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 0: Send both LM and NTLM responses, never use NTLMv2 session security. "
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                1 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 1: Use NTLMv2 session security if available, otherwise use LM and NTLM."
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                2 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 2: Send NTLM response only."
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                3 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 3: Send NTLMv2 response only."
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                4 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 4: Refuse LM responses, accept NTLM and NTLMv2."
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                5 {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "  Level 5: Refuse LM and NTLM responses, accept only NTLMv2."
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+                default {
+                    Write-Host "================================"
+                    Write-Host "          NTLM Version          "
+                    Write-Host "================================"
+                    Write-Host "         Nothing set...         "
+                    Write-Host "________________________________"
+                    Write-Host ""
+                }
+            }
+        } catch {
+            Write-Host "Error accessing registry path: $ntlmPath"
+        }
+    }
+
+    # Function to check WDigest
+    function Get-WDigestParameters {
+        $wdigestPath = "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest"
+
+        try {
+            $logonCred = (Get-ItemProperty -Path $wdigestPath -ErrorAction Stop).UseLogonCredential
+            $negotiate = (Get-ItemProperty -Path $wdigestPath -ErrorAction Stop).Negotiate
+            Write-Host "================================"
+            Write-Host "      WDigest Configuration          "
+            Write-Host "================================"
+            Write-Host "  UseLogonCredential: $(If ($logonCred -eq 0) {'Protected'})"
+            Write-Host "  Negotiate: $(If ($negotiate -eq 0) {'Protected'})"
+            Write-Host "________________________________"
+            Write-Host ""
+            Write-Host ""
+        } catch {
+            Write-Host "Error accessing registry parameters for WDigest!"
+        }
+    }
+
     # Function to check TLS values
     function Get-TLSValues {
         $tlsRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols"
@@ -1405,6 +1500,12 @@ function Init-SEC11 {
     # Check SMB versions (SMB2 by default - if SMB1, check for legacy reasons)
     Get-SMBVersions
 
+    # Check WDigest parameters
+    Get-WDigestParameters
+
+    # Check NTLM version
+    Get-NTLMVersion
+
     # Check TLS values (Hardened: TLS1.2 client/server ---- BestPractice: >= TLS1.0 client/server)
     Get-TLSValues
 
@@ -1413,6 +1514,8 @@ function Init-SEC11 {
 
     # Check Ciphers (Hardened: AES only ---- BestPractice: AES,3DES)
     Get-Ciphers
+
+
 
     Write-Host ""
     $null = Read-Host "Press Enter to exit the script"
@@ -1787,24 +1890,23 @@ while ($true) {
     Sleep 1
     Show-Prerequisites($selection)
 
+    Write-Host ""
     $capture0 = Read-Host "Do you wish to proceed with running [SEC$selection]? (y/n)"
+    Write-Host ""
+
     if ($capture0 -eq 'y') {
         # Initiate SEC0 protocol...
         Run-SecurityCode($selection)
     } elseif ($capture0 -eq 'n') {
         Write-Host ""
-        Write-Host "No Security Code was run. Exiting script..." -ForegroundColor Red
+        Write-Host "No Security Code was run. Back to the MAIN MENU!" -ForegroundColor Red
         Write-Host ""
         Sleep 1
-        Banner-SEC99
-        Exit
     } else {
         Write-Host ""
-        Write-Host "Not a valid choice! Exiting script..." -ForegroundColor Red
+        Write-Host "Not a valid choice! Back to the MAIN MENU!" -ForegroundColor Red
         Write-Host ""
         Sleep 1
-        Banner-SEC99
-        Exit
     }   
 }
 
