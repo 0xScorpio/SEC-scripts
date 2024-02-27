@@ -46,7 +46,7 @@ $currentDateFormatted = Get-Date -Format "ddMMyyyy"
 # for usage on another script! Tread carefully!
 
 #### SEC0 ####
-$keywords_SEC0 = "[SEC1]", "[SEC2]"
+$keywords_SEC0 = "[SEC1]", "[SEC2]", "[SEC4]"
 
 #### SEC1 ####
 $OUPath_SEC1 = "OU=123"
@@ -578,51 +578,63 @@ function Init-SEC0 {
     # Check if $keywords_SEC0 is a non-empty string ---> input validation
     if (-not [string]::IsNullOrEmpty($keywords_SEC0) -and ($keywords_SEC0 -is [array] -or $keywords_SEC0 -is [string])) {
 
+        # Ensure $keywords_SEC0 is always treated as an array
+        if ($keywords_SEC0 -isnot [array]) {
+            $keywords_SEC0 = @($keywords_SEC0)
+        }
+
         # Create an array to store individual filter conditions
         $filterConditions = foreach ($keyword in $keywords_SEC0) {
-            "Description -like '*$keyword*'"
+            "(Description -like '*$keyword*')"
         }
 
         # Combine filter conditions
-        $filterExpression = ($filterConditions -join " -or ")
+        $filterExpression = "(" + ($filterConditions -join " -or ") + ")"
 
-        # Search for objects based on keywords in the description
-        $objects = Get-ADObject -Filter $filterExpression -Properties SamAccountName, Description, DistinguishedName
+        # Search for user objects based on keywords in the description
+        $users = Get-ADUser -Filter $filterExpression -Properties SamAccountName, Description, DistinguishedName, Enabled
 
-        # Output the results to console and export to CSV file
-        $objects | ForEach-Object {
+        # Search for computer objects based on keywords in the description
+        $computers = Get-ADComputer -Filter $filterExpression -Properties SamAccountName, Description, DistinguishedName
 
-            Write-Host "SAM Account Name: $($_.SamAccountName)"
-            Write-Host "Description: $($_.Description)"
-            Write-Host "DistinguishedName: $($_.DistinguishedName)"
-            Write-Host "------------------------------------------------"
-
-            # Output the object directly to pipeline
-            [PSCustomObject]@{
-                SamAccountName = $_.SamAccountName
-                Description = $_.Description
-                DistinguishedName = $_.DistinguishedName
+        # Output the results to console - Had an issue using Get-ADObject since the Enabled attribute struggled between
+        # User and Computer objects, therefore, I'm separating it out and combining it afterwards.
+        $combinedResults = @()
+        
+        foreach ($user in $users) {
+            $combinedResults += [PSCustomObject]@{
+                ObjectType          = "User"
+                SamAccountName      = $user.SamAccountName
+                Status              = $user.Enabled
+                Description         = $user.Description
+                DistinguishedName   = $user.DistinguishedName
             }
+        }
 
-        } | Export-Csv -Path "SecurityCodeScan_$currentDateFormatted.csv" -NoTypeInformation
+        foreach ($computer in $computers) {
+            $combinedResults += [PSCustomObject]@{
+                ObjectType          = "Computer"
+                SamAccountName      = $computer.SamAccountName
+                Status              = $computer.Enabled
+                Description         = $computer.Description
+                DistinguishedName   = $computer.DistinguishedName
+            }
+        }
+
+        $combinedResults | Export-Csv -Path "SecurityCodeScan_$currentDateFormatted.csv" -NoTypeInformation
 
         Write-Host ""
-        Write-Host "Data exported to 'SecurityCodeScan.csv_$currentDateFormatted' file!" -ForegroundColor Yellow
+        Write-Host "Data exported to 'SecurityCodeScan_$currentDateFormatted.csv' file!" -ForegroundColor Yellow
         Write-Host ""
 
     } else {
 
         Write-Host ""
-        Write-Host "Keywords are either empty or not a string. Exiting the program..." -ForegroundColor Red
+        Write-Host "Keyword variable is not in the correct format. Exiting the program..." -ForegroundColor Red
         Write-Host ""
 
     }
-
     Sleep 1
-    Banner-SEC99
-    Sleep1
-    Exit
-
 }
 
 function Init-SEC1 {
@@ -723,7 +735,7 @@ function Init-SEC2 {
             ## Check if the user account EXISTS
             if ($user -eq $null) {
                 Write-Host ""
-                Write-Host "User account '$userAccount' not found."
+                Write-Host "User account '$userAccount' not found." -ForegroundColor Red
                 Write-Host ""
                 continue
             }   
@@ -740,7 +752,7 @@ function Init-SEC2 {
             ## Check if the user account is DISABLED
             if (-not $user.Enabled) {
                 Write-Host ""
-                Write-Host "User account '$userAccount' is already disabled."
+                Write-Host "User account '$userAccount' is already disabled." -ForegroundColor Yellow
                 Write-Host ""
                 Write-Host "Current description: $existingDescription"
                 Write-Host "OU: $($user.DistinguishedName)"
@@ -754,7 +766,7 @@ function Init-SEC2 {
             ## If the PasswordLastSet doesn't exist, inform and continue with rest of script.
             if ($lastPasswordReset -eq $null) {
                 Write-Host ""
-                Write-Host "Unable to retrieve the last password reset information for '$userAccount'."
+                Write-Host "Unable to retrieve the last password reset information for '$userAccount'." -ForegroundColor Yellow
                 Write-Host "OU: $($user.DistinguishedName)"
                 Write-Host ""
                 continue
@@ -781,18 +793,18 @@ function Init-SEC2 {
                 Set-ADUser -Identity $userAccount -Replace @{Comment=$newComment}
                 Set-ADUser -Identity $userAccount -Description $newDescription 
                 Write-Host ""
-                Write-Host "User account '$userAccount' has been disabled."
+                Write-Host "User account '$userAccount' has been disabled." -ForegroundColor Yellow
                 Write-Host ""
             } else {
                 Write-Host ""
-                Write-Host "User account '$userAccount' was NOT disabled."
+                Write-Host "User account '$userAccount' was NOT disabled." -ForegroundColor Yellow
                 Write-Host ""
             }
         }
     } elseif ($accountType -eq "computer") {
         ######################## COMPUTER ACCOUNTS #########################
         Write-Host ""
-        $compAccounts = Read-Host "Enter the computer account(s) for review (separated by spaces)"
+        $compAccounts = Read-Host "Enter the computer account(s) [COMPUTER$] for review (separated by spaces)"
         Write-Host ""
         $compList = $compAccounts -split ' '    
 
@@ -803,7 +815,7 @@ function Init-SEC2 {
             ## Check if the Computer Account EXISTS
             if ($Computer -eq $null) {
                 Write-Host ""
-                Write-Host "Computer account '$compAccount' not found."
+                Write-Host "Computer account '$compAccount' not found." -ForegroundColor Red
                 Write-Host ""
                 continue
             }   
@@ -821,7 +833,7 @@ function Init-SEC2 {
             ## Check if the Computer Account is DISABLED
             if (-not $Computer.Enabled) {
                 Write-Host ""
-                Write-Host "Computer Account '$compAccount' is already disabled."
+                Write-Host "Computer Account '$compAccount' is already disabled." -ForegroundColor Yellow
                 Write-Host ""
                 Write-Host "Current description: $existingDescription"
                 Write-Host "OU: $($Computer.DistinguishedName)"
@@ -846,11 +858,11 @@ function Init-SEC2 {
                 Set-ADComputer -Identity $compAccount -Replace @{Comment=$newCommentC}
                 Set-ADComputer -Identity $compAccount -Description $newDescriptionC
                 Write-Host ""
-                Write-Host "Computer Account '$compAccount' has been disabled."
+                Write-Host "Computer Account '$compAccount' has been disabled." -ForegroundColor Yellow
                 Write-Host ""
             } else {
                 Write-Host ""
-                Write-Host "Computer Account '$compAccount' was NOT disabled."
+                Write-Host "Computer Account '$compAccount' was NOT disabled." -ForegrounColor Yellow
                 Write-Host ""
             }
         }
@@ -858,14 +870,11 @@ function Init-SEC2 {
     } else {
 
         Write-Host ""
-        Write-Host "Invalid input placed: $accountType"
+        Write-Host "Invalid input placed: $accountType" -ForegroundColor Red
         Write-Host "Exiting script..."
         Write-Host ""
         
         Sleep 1
-        Banner-SEC99
-        Sleep1
-        Exit
     }
 }
 
@@ -924,7 +933,6 @@ function Init-SEC3 {
 
 
     ############ FUNCTIONS TO MOVE ACCOUNTS TO THEIR CORRESPONDING OU PATHS ############
-    $currentDate = Get-Date
     $sec3Tag = "[SEC3] $currentDate"
 
     # Function to move user to disabled OU
@@ -1109,7 +1117,7 @@ function Init-SEC4 {
         }
 
         if (-not $user.Enabled) {
-            Write-Host "User account '$userAccount' is already disabled."
+            Write-Host "User account '$userAccount' is already disabled." -ForegroundColor Yellow
             Write-Host "Current description: $($user.Description)"
             Write-Host "OU: $($user.DistinguishedName)"
             Start-Sleep -Seconds 3
@@ -1142,9 +1150,13 @@ function Init-SEC4 {
             Disable-ADAccount -Identity $userAccount
             Set-ADUser -Identity $userAccount -Replace @{Comment=$newComment}
             Set-ADUser -Identity $userAccount -Description $newDesc
-            Write-Host "User account '$userAccount' has been disabled."
+            Write-Host ""
+            Write-Host "User account '$userAccount' has been disabled successfully!" -ForegroundColor Green
+            Write-Host ""
         } else {
-            Write-Host "User account '$userAccount' was not disabled."
+            Write-Host ""
+            Write-Host "User account '$userAccount' was NOT disabled!" -ForegroundColor Red
+            Write-Host ""
         }
     }
 }
@@ -1160,12 +1172,9 @@ function Init-SEC5 {
 
     if (-not $account) {
         Write-Host ""
-        Write-Host "Service account '$serviceAccount' not found."
+        Write-Host "Service account '$serviceAccount' not found." -ForegroundColor Red
         Write-Host ""
         Sleep 1
-        Banner-SEC99
-        Sleep1
-        Exit
     }
 
     # Display account information
@@ -1220,13 +1229,13 @@ function Init-SEC5 {
             Enable-ADAccount -Identity $serviceAccount
             Set-ADUser -Identity $serviceAccount -Replace @{Comment = $newCommentEnabled}
             Write-Host ""
-            Write-Host "$serviceAccount has been enabled!"
+            Write-Host "$serviceAccount has been enabled successfully!" -ForegroundColor Green
             $checkE = Get-ADUser -Identity $serviceAccount -Properties Comment
             Write-Host "Logged on comment attribute: $($checkE.Comment)"
             Write-Host ""
         } else {
             Write-Host ""
-            Write-Host "$serviceAccount is already enabled. Exiting script..."
+            Write-Host "$serviceAccount is already enabled. Exiting script..." -ForegroundColor Red
             Write-Host ""
             Sleep 1
             Banner-SEC99
@@ -1241,13 +1250,13 @@ function Init-SEC5 {
             Disable-ADAccount -Identity $serviceAccount
             Set-ADUser -Identity $serviceAccount -Replace @{Comment = $newCommentDisabled}
             Write-Host ""
-            Write-Host "$serviceAccount has been disabled!"
+            Write-Host "$serviceAccount has been disabled successfully!" -ForegroundColor Green
             $checkD = Get-ADUser -Identity $serviceAccount -Properties Comment
             Write-Host "Logged on comment attribute: $($checkD.Comment)"
             Write-Host ""
         } else {
             Write-Host ""
-            Write-Host "$serviceAccount is already disabled. Exiting script..."
+            Write-Host "$serviceAccount is already disabled. Exiting script..." -ForegroundColor Red
             Write-Host ""
             Sleep 1
             Banner-SEC99
@@ -1258,7 +1267,7 @@ function Init-SEC5 {
         exit
     } else {
         Write-Host ""
-        Write-Host "You entered $promptChoice which is not a valid input! Exiting..."
+        Write-Host "You entered $promptChoice which is not a valid input! Exiting..." -ForegroundColor Red
         Write-Host ""
         Sleep 1
         Banner-SEC99
@@ -1557,9 +1566,9 @@ function Init-SEC13 {
 
    # Check if the account is locked out
    if ($user.lockoutTime -ne 0) {
-       Write-Host "The account $username is currently locked out. Unlock the account first!"
+       Write-Host "The account $username is currently locked out. Unlock the account first!" -ForegroundColor Yellow
    } elseif ($user.badPwdCount -ge $maxBadLogins_SEC13) {
-       Write-Host "The account $username has exceeded the maximum allowed login attempts. Please try again after 60 minutes."
+       Write-Host "The account $username has exceeded the maximum allowed login attempts. Please try again after 60 minutes." -ForegroundColor Yellow
    } else {
        # Perform the credential check here
        $credential = Get-Credential -Message 'Enter your credentials for verification:'
@@ -1567,14 +1576,14 @@ function Init-SEC13 {
        $directoryEntry = New-Object System.DirectoryServices.DirectoryEntry("", $credential.UserName, $credential.GetNetworkCredential().Password)
        
        if ($directoryEntry.psbase.name -ne $null) {
-           Write-Host "Authentication successful!"
+           Write-Host "Authentication successful!" -ForegroundColor Green
        } else {
-           Write-Host "Authentication failed. Please check your credentials."
+           Write-Host "Authentication failed. Please check your credentials." -ForegroundColor Red
        }
        # After credential check, ensure account is not locked:
        $user = Get-ADUser -Identity $username -Properties lockoutTime
        if ($user.lockoutTime -ne 0) {
-           Write-Host "Account $username is currently locked due to credential check. Proceed to unlock via AD!"
+           Write-Host "Account $username is currently locked due to credential check. Proceed to unlock via AD!" -ForegroundColor Yellow
        }
    }
 }
