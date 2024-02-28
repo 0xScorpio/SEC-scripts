@@ -39,17 +39,10 @@ $currentDateFormatted = Get-Date -Format "ddMMyyyy"
 
 #---------------------------------------------------------------------------------#
 
-# Custom Variables - EDIT VARIABLES HERE!
-
-# Due to some scripts sharing variables such as OU Paths, they've instead been
-# separated to ensure no user error occurs when 'forgetting' to change the variable
-# for usage on another script! Tread carefully!
-
 #### SEC0 ####
-$keywords_SEC0 = "[SEC1]", "[SEC2]", "[SEC4]"
+$keywords_SEC0 = "[SEC1]", "[SEC2]", "[SEC4]", "[SEC5]"
 
 #### SEC1 ####
-$OUPath_SEC1 = "OU=123"
 $dayThreshold_SEC1 = 70
 
 #### SEC6 ####
@@ -102,9 +95,6 @@ on C:\Users\USER\Desktop\ , you'll find it on the corresponding user's desktop!
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit:
-
-[1] `$keywords_SEC0
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -122,10 +112,6 @@ though feel free to edit both OU Path and threshold days under 'Custom Variables
 
 Attribute Tags: Description, Comment
 
-Prerequisite variables to edit:
-
-[1] '`$OUPath_SEC1'
-[2] '`$dayThreshold_SEC1'
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -149,7 +135,6 @@ on your company's Azure AD Connect/ADSync - so make sure to check/inform IT firs
 
 Attribute Tags: Description, Comment
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -172,7 +157,6 @@ moving any object:
 
 Attribute Tags: Comment
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -191,8 +175,6 @@ department's Threat Intel), run [SEC4] to disable and tag the account accordingl
 
 Attribute Tags: Description, Comment
 
-Prerequisite variables to edit: N/A
-
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -208,7 +190,6 @@ JUST-IN-TIME!
 
 Attribute Tags: Description, Comment
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -238,10 +219,6 @@ Default threshold is 100 days.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit:
-
-[1] `$OUPath_SEC6
-[2] `$inactivity_SEC6
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -256,8 +233,6 @@ ________________________________________________________________________________
 COMING SOON!
 
 Attribute Tags: N/A
-
-Prerequisite variables to edit: N/A
 
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
@@ -274,8 +249,6 @@ COMING SOON!
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
-
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -290,8 +263,6 @@ ________________________________________________________________________________
 COMING SOON!
 
 Attribute Tags: N/A
-
-Prerequisite variables to edit: N/A
 
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
@@ -308,8 +279,6 @@ COMING SOON!
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
-
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -324,7 +293,9 @@ ________________________________________________________________________________
 Pulls information regarding SMB, TLS, Hashes and Ciphers through the Registry Editor. 
 Specifically, this script checks the following paths:
 
+- HKLM:\SYSTEM\CurrentControlSet\Control\Lsa
 - HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+- HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest
 - HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols
 - HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Hashes
 - HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers
@@ -342,7 +313,6 @@ issues with older server versions or legacy system applications.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A 
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -360,7 +330,6 @@ Feel free to edit the -MaxEvents parameter to your chosen number of events.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -381,7 +350,6 @@ Default `$maxBadLogins is set to 1.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -397,9 +365,6 @@ COMING SOON!
 
 Attribute Tags: Description, Comment
 
-Prerequisite variables to edit:
-
-[1] '`$keywords'
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -416,7 +381,6 @@ edits if required.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -433,7 +397,6 @@ that caused a user to be locked out of their account. Useful for clearing up ses
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -450,7 +413,6 @@ Customize the Start Time variable accordingly. Default start time is 24 hours.
 
 Attribute Tags: N/A
 
-Prerequisite variables to edit: N/A
 ____________________________________________________________________________________
 "@ -ForegroundColor Cyan 
 }
@@ -512,44 +474,8 @@ function Run-Banner([int] $securityBanner) {
         Write-Host ""
         Sleep 1
         Banner-SEC99
-        Sleep1
+        Sleep 1
         Exit
-    }
-}
-
-# Check prerequisites
-function Show-Prerequisites([int] $requisite) {
-    switch ($requisite) {
-        
-        '0' {
-            Write-Host ""
-            Write-Host "The following variable values are being executed with the script:"
-            Write-Host ""
-            Write-Host "`$keywords_SEC0: $keywords_SEC0" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "If you need to change any variables, stop the script [Ctrl+C]"
-            Write-Host "and change those stated variables within the VARIABLES section!"
-            Write-Host ""
-        }
-
-        '1' {
-            Write-Host ""
-            Write-Host "The following variable values are being executed with the script:"
-            Write-Host ""
-            Write-Host "`$OUPath_SEC1: $OUPath_SEC1" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "`$dayThreshold_SEC1: $dayThreshold_SEC1" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "If you need to change any variables, stop the script [Ctrl+C]"
-            Write-Host "and change those stated variables within the VARIABLES section!"
-            Write-Host ""
-        }
-            ##############     ADD  MORE      ##################
-        'default' {
-            Write-Host ""
-            Write-Host "No pre-requisite variables required!"
-            Write-Host ""
-        }
     }
 }
 
@@ -564,7 +490,7 @@ function Run-SecurityCode([int] $securityCode) {
         Write-Host ""
         Sleep 1
         Banner-SEC99
-        Sleep1
+        Sleep 1
         Exit
     }
 }
@@ -621,16 +547,16 @@ function Init-SEC0 {
             }
         }
 
-        $combinedResults | Export-Csv -Path "SecurityCodeScan_$currentDateFormatted.csv" -NoTypeInformation
+        $combinedResults | Export-Csv -Path "$env:USERPROFILE/Desktop/SecurityCodeScan_$currentDateFormatted.csv" -NoTypeInformation
 
         Write-Host ""
-        Write-Host "Data exported to 'SecurityCodeScan_$currentDateFormatted.csv' file!" -ForegroundColor Yellow
+        Write-Host "Data exported to '$env:USERPROFILE/Desktop/SecurityCodeScan_$currentDateFormatted.csv' !" -ForegroundColor Yellow
         Write-Host ""
 
     } else {
 
         Write-Host ""
-        Write-Host "Keyword variable is not in the correct format. Exiting the program..." -ForegroundColor Red
+        Write-Host "Keyword variable is not in the correct format. Exiting..." -ForegroundColor Red
         Write-Host ""
 
     }
@@ -665,7 +591,6 @@ function Init-SEC1 {
             try {
                 if ($inactivedays -ge $DayThreshold) {
                     $newDescription = "[SEC1] Edited: $CurrentDate INACTIVE:$inactivedays LastLog: $lastlog PwdSet: $pls PwdNExp: $pne || "
-                    $latestSEC1 = $existingDescription -replace ".*||", $newDescription
 
                     # Append the new description to the Comment attribute
                     $newComment = "$newDescription | $existingComment"
@@ -673,7 +598,9 @@ function Init-SEC1 {
                     # Update the Description attribute
                     Set-ADObject -Identity $object -Description $newDescription
 
-                    Write-Host "Updated/appended 'Comment' attribute for $($object.SamAccountName)"
+                    Write-Host ""
+                    Write-Host "Updated/appended 'Description' and 'Comment' attribute for $($object.SamAccountName)"
+                    Write-Host ""
                 }
             } catch {
                 # Added the stack-trace for debugging because I couldn't find what failed just by PSItem
@@ -684,37 +611,44 @@ function Init-SEC1 {
         }
     }
 
+    # Prompt for OU Path:
+    Write-Host ""
+    $OUPath_SEC1 = Read-Host "Enter the OU Path to tag in DN format (OU=Example,DC=domain,DC=tld)"
+    Write-Host ""
+
     # Validate and sanitize input parameters
     if (-not ($OUPath_SEC1 -match '^OU=.*') -or -not ([adsi]::Exists("LDAP://$OUPath_SEC1"))) {
-        Write-Host "Invalid OU path specified."
+        Write-Host ""
+        Write-Host "Invalid OU path specified." -ForegroundColor Red
+        Write-Host ""
         return
     }
 
     if ($dayThreshold_SEC1 -le 0) {
-        Write-Host "Invalid day threshold specified."
+        Write-Host ""
+        Write-Host "Invalid day threshold specified." -ForegroundColor Red
+        Write-Host ""
         return
     }
 
     Write-Host "[SEC1] is about to apply tags unto the following OU path with the current threshold:"
     Write-Host ""
-    Write-Host "OU-Path: $OUPath_SEC1" -ForegroundColor Yellow
+    Write-Host "OU: $OUPath_SEC1" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Threshold: $dayThreshold_SEC1 days" -ForegroundColor Yellow
     Write-Host ""
     $userChoice = Read-Host "Tagging means updating the description attribute. What object type are we tagging? (user/computer)"
-
-    $currentDate = Get-Date
+    Write-Host ""
 
     if ($userChoice -eq "computer" -or $userChoice -eq "user") {
         TagObjects -ObjectType $userChoice -OUPath $OUPath_SEC1 -DayThreshold $dayThreshold_SEC1 -CurrentDate $currentDate
     } else {
-        Write-Host "Invalid object type specified."
+        Write-Host ""
+        Write-Host "Invalid object type specified." -ForegroundColor Red
+        Write-Host ""
     }
 
     Sleep 1
-    Banner-SEC99
-    Sleep1
-    Exit
 }
 
 function Init-SEC2 {
@@ -747,7 +681,7 @@ function Init-SEC2 {
             $sec2Tag = "[SEC2] - Disabled (inactive/decom) $currentDate -- LastLogon: $lastlogU, PwdLastSet: $($user.PasswordLastSet)"
             $currentComment = $user.Comment
             $newComment = "$sec2Tag | $currentComment"
-            $newDescription = "$sec2Tag | $existingDescription"     
+            $newDescription = "$sec2Tag"     
 
             ## Check if the user account is DISABLED
             if (-not $user.Enabled) {
@@ -828,14 +762,14 @@ function Init-SEC2 {
             $existingDescriptionC = $Computer.Description
             $currentCommentC = $Computer.Comment
             $newCommentC = "$sec2Tag | $currentCommentC"
-            $newDescriptionC = "$sec2Tag | $existingDescriptionC"     
+            $newDescriptionC = "$sec2Tag"     
 
             ## Check if the Computer Account is DISABLED
             if (-not $Computer.Enabled) {
                 Write-Host ""
                 Write-Host "Computer Account '$compAccount' is already disabled." -ForegroundColor Yellow
                 Write-Host ""
-                Write-Host "Current description: $existingDescription"
+                Write-Host "Current description: $existingDescriptionC"
                 Write-Host "OU: $($Computer.DistinguishedName)"
                 Write-Host ""
                 Start-Sleep -Seconds 2
@@ -1558,14 +1492,17 @@ function Init-SEC12 {
 }
 
 function Init-SEC13 {
+   Write-Host ""
    $username = Read-Host 'In order to check credentials, we need to ensure the account is not locked out or
    hasnt surpassed any bad password counter limits. Please enter the account for review'
+   Write-Host ""
 
    # Get the user object from Active Directory
    $user = Get-ADUser -Identity $username -Properties badPwdCount, lockoutTime
 
    # Check if the account is locked out
    if ($user.lockoutTime -ne 0) {
+       Write-Host ""
        Write-Host "The account $username is currently locked out. Unlock the account first!" -ForegroundColor Yellow
    } elseif ($user.badPwdCount -ge $maxBadLogins_SEC13) {
        Write-Host "The account $username has exceeded the maximum allowed login attempts. Please try again after 60 minutes." -ForegroundColor Yellow
@@ -1812,9 +1749,6 @@ function Init-SEC15 {
             }
     }
      Sleep 1
-     Banner-SEC99
-     Sleep 1
-     Exit
 }
 
 function Init-SEC16 {
@@ -1897,7 +1831,6 @@ while ($true) {
     Sleep 1
     Run-Banner($selection)
     Sleep 1
-    Show-Prerequisites($selection)
 
     Write-Host ""
     $capture0 = Read-Host "Do you wish to proceed with running [SEC$selection]? (y/n)"
