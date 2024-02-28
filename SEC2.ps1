@@ -44,7 +44,7 @@ if ($accountType -eq "user") {
         $sec2Tag = "[SEC2] - Disabled (inactivity/decommission) $currentDate, LastLogon: $lastlogU, LastPasswordSet: $($user.PasswordLastSet)"
         $currentComment = $user.Comment
         $newComment = "$sec2Tag | $currentComment"
-        $newDescription = "$sec2Tag | $existingDescription"     
+        $newDescription = "$sec2Tag"     
 
         ## Check if the user account is DISABLED
         if (-not $user.Enabled) {
@@ -122,14 +122,14 @@ if ($accountType -eq "user") {
         $existingDescriptionC = $Computer.Description
         $currentCommentC = $Computer.Comment
         $newCommentC = "$sec2Tag | $currentCommentC"
-        $newDescriptionC = "$sec2Tag | $existingDescriptionC"     
+        $newDescriptionC = "$sec2Tag"     
 
         ## Check if the Computer Account is DISABLED
         if (-not $Computer.Enabled) {
             Write-Host ""
             Write-Host "Computer Account '$compAccount' is already disabled."
             Write-Host ""
-            Write-Host "Current description: $existingDescription"
+            Write-Host "Current description: $existingDescriptionC"
             Write-Host "OU: $($Computer.DistinguishedName)"
             Write-Host ""
             Start-Sleep -Seconds 2
