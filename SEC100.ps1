@@ -45,10 +45,11 @@ $keywords_SEC0 = "[SEC1]", "[SEC2]", "[SEC4]", "[SEC5]"
 #### SEC1 ####
 $dayThreshold_SEC1 = 70
 
-#### SEC6 ####
+#### SEC11 ####
+$userProfileDesktop = [System.Environment]::GetFolderPath("Desktop")
 
 #### SEC13 ####
-$maxBadLogins_SEC13 = 1
+$maxBadLogins_SEC13 = 3
 
 #### SEC14 ####
 
@@ -346,7 +347,9 @@ The official credential verifier!
 First, it will check to ensure that the account you want to validate is not currently
 locked out or is about to get locked out if a credential check fails!
 
-Default `$maxBadLogins is set to 1.
+Default `$maxBadLogins is set to 3 for precautionary measures.
+
+Default bad logins attempts on Active Directory is 5 before an account lockout.
 
 Attribute Tags: N/A
 
@@ -408,8 +411,7 @@ ________________________________________________________________________________
 
 ============================   SECURITY CODE 17   ============================   
 
-Checks all the disabled/enabled object events in the past X hours.
-Customize the Start Time variable accordingly. Default start time is 24 hours.
+Checks all the disabled/enabled object events in the past 24 hours.
 
 Attribute Tags: N/A
 
@@ -1257,14 +1259,16 @@ function Init-SEC11 {
         $ntlmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
 
         try {
-            $lmCompatibility = (Get-ItemProperty -Path $ntlmPath -ErrorAction Stop).LMCompatibility
+            $lmCompatibility = (Get-ItemPropertyValue -Path $ntlmPath -Name LMCompatibilityLevel)
 
             switch ($lmCompatibility) {
                 0 {
                     Write-Host "================================"
                     Write-Host "          NTLM Version          "
                     Write-Host "================================"
-                    Write-Host "  Level 0: Send both LM and NTLM responses, never use NTLMv2 session security. "
+                    Write-Host " Level 0: Send both LM and NTLM "
+                    Write-Host " responses, never use NTLMv2    "
+                    Write-Host " session security.              "
                     Write-Host "________________________________"
                     Write-Host ""
                 }
@@ -1272,7 +1276,9 @@ function Init-SEC11 {
                     Write-Host "================================"
                     Write-Host "          NTLM Version          "
                     Write-Host "================================"
-                    Write-Host "  Level 1: Use NTLMv2 session security if available, otherwise use LM and NTLM."
+                    Write-Host " Level 1: Use NTLMv2 session    "
+                    Write-Host "security if available, otherwise"
+                    Write-Host " use LM and NTLM."
                     Write-Host "________________________________"
                     Write-Host ""
                 }
@@ -1296,7 +1302,8 @@ function Init-SEC11 {
                     Write-Host "================================"
                     Write-Host "          NTLM Version          "
                     Write-Host "================================"
-                    Write-Host "  Level 4: Refuse LM responses, accept NTLM and NTLMv2."
+                    Write-Host "  Level 4: Refuse LM responses, "
+                    Write-Host "  accept NTLM and NTLMv2."
                     Write-Host "________________________________"
                     Write-Host ""
                 }
@@ -1304,7 +1311,8 @@ function Init-SEC11 {
                     Write-Host "================================"
                     Write-Host "          NTLM Version          "
                     Write-Host "================================"
-                    Write-Host "  Level 5: Refuse LM and NTLM responses, accept only NTLMv2."
+                    Write-Host "  Level 5: Refuse LM and NTLM   "
+                    Write-Host " responses, accept only NTLMv2. "
                     Write-Host "________________________________"
                     Write-Host ""
                 }
@@ -1458,16 +1466,52 @@ function Init-SEC11 {
     # Check Ciphers (Hardened: AES only ---- BestPractice: AES,3DES)
     Get-Ciphers
 
-
-
     Write-Host ""
-    $null = Read-Host "Press Enter to exit the script"
+    Read-Host "Press any key to continue..."
     Write-Host ""
 
-    Sleep 1
-    Banner-SEC99
-    Sleep 1
-    Exit
+    $options = Read-Host "Options: (backup/exit)"
+
+    switch ($options) {
+        'backup' {
+            Write-Host ""
+            Write-Host "Proceeding with backing up the following registry files: "
+            Write-Host ""
+            Write-Host "[+] HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders"
+            Write-Host "[+] HKLM\SYSTEM\CurrentControlSet\Control\Lsa"
+            Write-Host "[+] HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+            Write-Host ""
+            try {
+                $DesktopPath = Join-Path $env:USERPROFILE 'Desktop'
+                    reg export 'HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders' (Join-Path $DesktopPath 'backup_SecurityProviders.reg') /y
+                    reg export 'HKLM\SYSTEM\CurrentControlSet\Control\Lsa' (Join-Path $DesktopPath 'backup_LSA.reg') /y
+                    reg export 'HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' (Join-Path $DesktopPath 'backup_SMB.reg') /y
+                    Sleep 1
+                    Write-Host "Backed up files have been placed on this profile's desktop!" -ForegroundColor Green
+                    Write-Host ""
+                    Sleep 2
+            }
+            catch {
+                Write-Host ""
+                Write-Host "Error: [+] $_"
+                Write-Host $_.ScriptStackTrace
+                Write-Host ""
+            }
+        }
+        bestpractice {
+            # Example
+            # Set-ItemProperty -Path "Registry:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest" -Name "UseLogonCredential" -Value "0"
+
+        }
+        fullyhardened {
+
+        }
+        default {
+            Write-Host ""
+            Write-Host "No backups or configurations were done! Exiting..." -ForegroundColor Yellow
+            Write-Host ""
+        }
+    }
 }
 
 function Init-SEC12 {
@@ -1504,8 +1548,11 @@ function Init-SEC13 {
    if ($user.lockoutTime -ne 0) {
        Write-Host ""
        Write-Host "The account $username is currently locked out. Unlock the account first!" -ForegroundColor Yellow
+       Write-Host ""
    } elseif ($user.badPwdCount -ge $maxBadLogins_SEC13) {
+       Write-Host ""
        Write-Host "The account $username has exceeded the maximum allowed login attempts. Please try again after 60 minutes." -ForegroundColor Yellow
+       Write-Host ""
    } else {
        # Perform the credential check here
        $credential = Get-Credential -Message 'Enter your credentials for verification:'
@@ -1513,9 +1560,13 @@ function Init-SEC13 {
        $directoryEntry = New-Object System.DirectoryServices.DirectoryEntry("", $credential.UserName, $credential.GetNetworkCredential().Password)
        
        if ($directoryEntry.psbase.name -ne $null) {
+           Write-Host ""
            Write-Host "Authentication successful!" -ForegroundColor Green
+           Write-Host ""
        } else {
+           Write-Host ""
            Write-Host "Authentication failed. Please check your credentials." -ForegroundColor Red
+           Write-Host ""
        }
        # After credential check, ensure account is not locked:
        $user = Get-ADUser -Identity $username -Properties lockoutTime
