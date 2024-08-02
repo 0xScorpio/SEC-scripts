@@ -1829,6 +1829,7 @@ if ($events) {
 } else {
     Write-Host "No lockout events found for user '$lockedOutUser'." -ForegroundColor Red
 }
+}
 
 function Init-SEC17 {
    Write-Host ""
